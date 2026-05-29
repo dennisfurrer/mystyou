@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en" data-scheme="dark" data-form="terminal" data-surface="desktop">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>myst.you</title>
+<!--
+  myst.you — single-file persona chat. Each preset reshapes the whole interface:
+  layout form, typography, palette, density, composer, and behaviour.
+  Connection: open the gear. Inside Claude.ai's sandbox, leave the key blank
+  (the host supplies access). From a file:// page, paste a key and tick
+  "Direct browser access". Persists to localStorage only when you opt in.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0f1012;--bg2:#16181b;--panel:#0b0c0e;--text:#e9eaec;--text-dim:rgba(233,234,236,.62);
+    --text-faint:rgba(233,234,236,.4);--border:rgba(233,234,236,.12);--border-strong:rgba(233,234,236,.22);
+    --accent:#3ddc97;--on-accent:#0b0c0e;--accent-soft:rgba(61,220,151,.16);
+    --user-bg:#3ddc97;--user-text:#0b0c0e;--asst-bg:#16181b;--asst-text:#e9eaec;--asst-border:rgba(233,234,236,.12);
+    --radius:3px;--radius-sm:3px;--font-head:'IBM Plex Mono',monospace;--font-body:'IBM Plex Mono',monospace;
+    --tr:0;--gap:10px;--pad:10px 14px;--lh:1.5;--maxw:900px;--fs:14.5px;
+    --bg-image:none;--bg-size:auto;--anim:140ms;--code-bg:#0a0b0d;--shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+  html,body{height:100%}
+  body{
+    font-family:var(--font-body);color:var(--text);background-color:var(--bg);
+    background-image:var(--bg-image);background-size:var(--bg-size);background-attachment:fixed;
+    font-size:var(--fs);line-height:var(--lh);-webkit-font-smoothing:antialiased;
+    transition:background-color var(--anim) ease,color var(--anim) ease;overflow:hidden;
+    -webkit-tap-highlight-color:transparent;overscroll-behavior:none;
+  }
+  ::selection{background:var(--accent-soft);color:var(--text)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text-faint);background-clip:padding-box}
+  button{font:inherit;color:inherit;cursor:pointer;background:none;border:none}
+  textarea,input,select{font:inherit;color:inherit}
+
+  .app{display:grid;grid-template-columns:272px 1fr;height:100vh;height:100dvh}
+
+  /* RAIL */
+  .rail{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;transition:background var(--anim) ease,border-color var(--anim) ease}
+  .rail-head{padding:20px 18px 14px}
+  .wordmark{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:.01em;font-size:13.5px;color:var(--text)}
+  .wordmark .wm-dot{color:var(--accent)}
+  .wordmark .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:9px;vertical-align:middle;transition:background var(--anim) ease}
+  .rail-scroll{flex:1;overflow-y:auto;padding:4px 10px 14px}
+  .rail-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);padding:14px 8px 8px;font-family:'IBM Plex Mono',monospace;font-weight:600}
+  .mode-item{width:100%;text-align:left;display:flex;align-items:flex-start;gap:12px;padding:10px 11px;border-radius:10px;color:var(--text-dim);border:1px solid transparent;transition:background 140ms ease,border-color 140ms ease;margin-bottom:4px;position:relative}
+  .mode-item:hover{background:var(--accent-soft);color:var(--text)}
+  .mode-item.active{background:var(--accent-soft);color:var(--text);border-color:var(--border)}
+  .mode-item.active .glyph{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--mc,var(--accent))}
+  .glyph{width:34px;height:34px;flex:none;border-radius:9px;overflow:hidden;display:block;transition:box-shadow 140ms ease}
+  .mode-meta{min-width:0;flex:1;padding-top:1px}
+  .mode-name{font-size:13.5px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+  .mode-role{display:block;font-size:11px;color:var(--text-faint);line-height:1.3;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Hanken Grotesk',system-ui,sans-serif;font-weight:500;letter-spacing:.01em}
+  .new-mode{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:9px;margin:2px 0;border:1px dashed var(--border-strong);color:var(--text-dim);background:transparent;transition:all 140ms ease;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+  .new-mode:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .new-mode .plus{width:24px;height:24px;display:grid;place-items:center;border-radius:7px;background:var(--accent);color:var(--on-accent);font-size:17px;font-weight:400;flex:none}
+  .portrait-btn{width:100%;display:flex;align-items:center;gap:12px;padding:11px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(180deg,var(--accent-soft),transparent);transition:all 140ms ease;text-align:left;margin-bottom:8px}
+  .portrait-btn:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .portrait-btn .pic{width:38px;height:38px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--accent-soft);border:1px solid var(--border);padding:3px}
+  .portrait-btn .pt{display:block;font-size:13px;font-weight:700;color:var(--text);font-family:'Hanken Grotesk',sans-serif;line-height:1.3}
+  .portrait-btn .ps{display:block;font-size:10.5px;color:var(--text-faint);margin-top:3px;font-family:'Hanken Grotesk',sans-serif;line-height:1.35}
+  .rail-foot{padding:12px 16px;border-top:1px solid var(--border);font-size:10.5px;color:var(--text-faint);font-family:'Hanken Grotesk',system-ui,sans-serif}
+
+  /* MAIN */
+  .main{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .topbar{display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--border);backdrop-filter:blur(8px);transition:border-color var(--anim) ease;flex:none}
+  .menu-btn{display:none;width:34px;height:34px;border-radius:8px;border:1px solid var(--border);place-items:center}
+  .top-glyph{width:40px;height:40px;flex:none;border-radius:10px;overflow:hidden;transition:all var(--anim) ease;box-shadow:var(--shadow)}
+  .top-meta{min-width:0;flex:1}
+  .top-name{font-family:var(--font-head);font-weight:600;font-size:17px;letter-spacing:var(--tr);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+  .top-role{font-size:11px;color:var(--accent);font-family:'Hanken Grotesk',system-ui,sans-serif;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+  .top-actions{display:flex;gap:8px;flex:none}
+  .ghost-btn{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text-dim);transition:all 140ms ease;display:flex;align-items:center;gap:7px;font-family:'Hanken Grotesk',system-ui,sans-serif;font-weight:500}
+  .ghost-btn:hover{border-color:var(--border-strong);color:var(--text);background:var(--accent-soft)}
+
+  .scroll{flex:1;overflow-y:auto;min-height:0;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .rail-scroll,.studio-body,.set-modal{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .thread{max-width:var(--maxw);margin:0 auto;padding:30px 24px 40px;display:flex;flex-direction:column;gap:var(--gap)}
+  .anim-in{animation:rise var(--anim) cubic-bezier(.2,.7,.3,1) both}
+
+  /* ---- shared bubble (used by bubbles form & fallback) ---- */
+  .row{display:flex}.row.user{justify-content:flex-end}
+  .bubble{max-width:86%;padding:var(--pad);border-radius:var(--radius);line-height:var(--lh);overflow-wrap:anywhere}
+  .row.user .bubble{background:var(--user-bg);color:var(--user-text)}
+  .row.asst .bubble{background:var(--asst-bg);color:var(--asst-text);border:1px solid var(--asst-border);box-shadow:var(--shadow)}
+
+  /* prose */
+  .prose p{margin:0 0 .7em}.prose p:last-child{margin-bottom:0}
+  .prose h3{font-size:1.12em;margin:.5em 0 .35em;font-family:var(--font-head);letter-spacing:var(--tr)}
+  .prose h4{font-size:1em;margin:.5em 0 .3em;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim)}
+  .prose ul,.prose ol{margin:.3em 0 .7em;padding-left:1.3em}.prose li{margin:.2em 0}
+  .prose code{font-family:'IBM Plex Mono',monospace;font-size:.88em;background:var(--code-bg);padding:.12em .4em;border-radius:5px;border:1px solid var(--border)}
+  .prose pre{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px;overflow-x:auto;margin:.5em 0}
+  .prose pre code{background:none;border:none;padding:0;font-size:.84em;line-height:1.5}
+  .prose strong{font-weight:700}.prose em{font-style:italic}
+
+  /* =================== FORM: TERMINAL =================== */
+  html[data-form="terminal"] .thread{gap:4px;font-family:'IBM Plex Mono',monospace}
+  .t-in{display:flex;gap:10px;padding:6px 0 2px;color:var(--text)}
+  .t-in .cue{color:var(--accent);font-weight:600;flex:none}
+  .t-in .txt{white-space:pre-wrap;overflow-wrap:anywhere}
+  .t-out{padding:2px 0 14px 0;color:var(--text-dim);border-bottom:1px dashed var(--border);margin-bottom:8px}
+  .t-out .prose{color:var(--text)}
+  .t-caret{display:inline-block;width:9px;height:17px;background:var(--accent);animation:blockblink 1.05s steps(1) infinite;vertical-align:-3px;margin-left:2px}
+  html[data-form="terminal"] .t-meta{color:var(--text-faint);font-size:.82em;letter-spacing:.04em;margin-bottom:14px}
+
+  /* =================== FORM: TRANSCRIPT =================== */
+  html[data-form="transcript"] .thread{gap:0}
+  .x-turn{padding:14px 0;border-bottom:1px solid var(--border)}
+  .x-turn:last-child{border-bottom:none}
+  .x-who{font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:7px;color:var(--text-faint)}
+  .x-turn.asst .x-who{color:var(--accent)}
+  .x-say{line-height:var(--lh)}
+
+  /* =================== FORM: BUBBLES =================== */
+  html[data-form="bubbles"] .thread{gap:12px}
+  .b-row{display:flex;align-items:flex-end;gap:9px}
+  .b-row.user{justify-content:flex-end}
+  .b-av{width:30px;height:30px;flex:none;border-radius:50%;overflow:hidden;margin-bottom:2px}
+  .b-bub{max-width:80%;padding:11px 16px;border-radius:22px;line-height:1.45}
+  .b-row.user .b-bub{background:var(--user-bg);color:var(--user-text);border-bottom-right-radius:7px}
+  .b-row.asst .b-bub{background:var(--asst-bg);color:var(--asst-text);border:1px solid var(--asst-border);border-bottom-left-radius:7px}
+
+  /* =================== FORM: MANUSCRIPT =================== */
+  html[data-form="manuscript"] .thread{gap:28px}
+  .ms-ask{font-family:'Hanken Grotesk',system-ui,sans-serif;font-style:italic;color:var(--text-dim);font-size:.95em;border-left:2px solid var(--accent);padding-left:14px}
+  .ms-ask .lbl{display:block;font-style:normal;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px;font-weight:600}
+  .ms-body{line-height:1.8;font-size:1.06em}
+  .ms-body .prose>p:first-child::first-letter{font-family:var(--font-head);font-size:3.1em;float:left;line-height:.82;padding:.05em .12em 0 0;color:var(--accent);font-weight:600}
+
+  /* =================== FORM: BRIEF =================== */
+  html[data-form="brief"] .thread{gap:18px}
+  .bf-ask{font-family:'Archivo',system-ui,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:800}
+  .bf-ask b{color:var(--text);font-weight:800}
+  .bf-brief{border-left:4px solid var(--accent);background:var(--asst-bg);padding:16px 20px;border-radius:0 var(--radius) var(--radius) 0}
+  .bf-brief .prose p:first-child{font-weight:800;font-size:1.12em;letter-spacing:-.01em}
+
+  /* =================== FORM: ANSWER =================== */
+  html[data-form="answer"] .thread{gap:34px;max-width:680px}
+  .an-q{font-size:12px;letter-spacing:.04em;color:var(--text-faint);text-transform:uppercase}
+  .an-a{font-size:1.5em;line-height:1.4;font-weight:500;letter-spacing:var(--tr)}
+  .an-a .prose{font-size:1em}
+
+  /* typing */
+  .typing{display:flex;gap:6px;padding:6px 2px}
+  .typing span{width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.5;animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+
+  /* empty state */
+  .empty{max-width:var(--maxw);margin:0 auto;padding:9vh 24px 40px;text-align:center;animation:rise var(--anim) ease both}
+  html[data-form="terminal"] .empty,html[data-form="brief"] .empty{text-align:left}
+  .empty .eg{width:66px;height:66px;border-radius:17px;overflow:hidden;margin:0 auto 22px;box-shadow:var(--shadow)}
+  html[data-form="terminal"] .empty .eg,html[data-form="brief"] .empty .eg{margin-left:0}
+  .empty .role-badge{display:inline-block;font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--accent);border:1px solid var(--accent-soft);background:var(--accent-soft);padding:5px 11px;border-radius:30px;margin-bottom:16px}
+  .empty h1{font-family:var(--font-head);font-size:32px;font-weight:600;letter-spacing:var(--tr);margin-bottom:10px}
+  .empty p{color:var(--text-dim);font-size:16px;max-width:480px;margin:0 auto 30px}
+  html[data-form="terminal"] .empty p,html[data-form="brief"] .empty p{margin-left:0}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:620px;margin:0 auto}
+  html[data-form="terminal"] .chips,html[data-form="brief"] .chips{justify-content:flex-start;margin-left:0}
+  .chip{padding:11px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;color:var(--text-dim);transition:all 140ms ease;text-align:left;background:var(--asst-bg);font-family:var(--font-body)}
+  .chip:hover{border-color:var(--accent);color:var(--text);transform:translateY(-1px)}
+  html[data-form="terminal"] .chip::before{content:"› ";color:var(--accent)}
+
+  /* COMPOSER */
+  .composer-wrap{flex:none;padding:0 24px 18px;background:linear-gradient(transparent,var(--bg) 36%)}
+  .composer{max-width:var(--maxw);margin:0 auto;display:flex;align-items:flex-end;gap:10px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg2);padding:10px 10px 10px 16px;transition:border-color 140ms ease,box-shadow 140ms ease}
+  .composer:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+  .composer .cue{display:none;color:var(--accent);font-family:'IBM Plex Mono',monospace;font-weight:600;align-self:center;font-size:1.1em}
+  html[data-form="terminal"] .composer .cue{display:block}
+  html[data-form="terminal"] .composer{border-radius:3px;border-left:3px solid var(--accent)}
+  .composer textarea{flex:1;background:none;border:none;outline:none;resize:none;line-height:1.5;max-height:200px;padding:6px 0;font-size:var(--fs)}
+  .composer textarea::placeholder{color:var(--text-faint)}
+  .send{flex:none;background:var(--accent);color:var(--on-accent);padding:10px 18px;border-radius:calc(var(--radius) - 1px);font-weight:600;font-family:var(--font-head);font-size:13px;letter-spacing:.04em;transition:all 140ms ease}
+  .send:hover:not(:disabled){filter:brightness(1.08)}
+  .send:disabled{opacity:.4;cursor:default}
+  .send.round{width:42px;height:42px;border-radius:50%;padding:0;font-size:19px;display:grid;place-items:center}
+  html[data-form="bubbles"] .composer{border-radius:26px;padding-left:20px}
+  .composer-hint{max-width:var(--maxw);margin:8px auto 0;font-size:11px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;min-height:14px}
+
+  /* surface: mobile -> phone column even on desktop */
+  html[data-surface="mobile"] .thread,html[data-surface="mobile"] .composer,html[data-surface="mobile"] .composer-hint,html[data-surface="mobile"] .empty{max-width:480px}
+
+  /* STUDIO */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:40}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .studio{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(580px,100%);background:var(--panel);border-left:1px solid var(--border);z-index:50;transform:translateX(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);display:flex;flex-direction:column}
+  .studio.open{transform:translateX(0)}
+  .studio-head{padding:20px 24px 0;flex:none}
+  .studio-head .hrow{display:flex;align-items:center;justify-content:space-between}
+  .studio-title{font-family:var(--font-head);font-weight:600;font-size:18px;letter-spacing:var(--tr)}
+  .studio-sub{color:var(--text-dim);font-size:13px;margin-top:3px}
+  .x-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);display:grid;place-items:center;font-size:18px;color:var(--text-dim)}
+  .x-btn:hover{color:var(--text);border-color:var(--border-strong)}
+  .tabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--border)}
+  .tab{padding:10px 4px;margin-right:18px;color:var(--text-faint);font-size:13.5px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:'Hanken Grotesk',system-ui,sans-serif}
+  .tab.active{color:var(--text);border-bottom-color:var(--accent)}
+  .studio-body{flex:1;overflow-y:auto;padding:22px 24px 30px}
+  .pane{display:none;animation:fade .2s ease}.pane.active{display:block}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-bottom:7px;font-weight:600;font-family:'Hanken Grotesk',system-ui,sans-serif}
+  .ipt,.ta,.sel{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;transition:border-color 140ms ease;outline:none;font-family:'Hanken Grotesk',system-ui,sans-serif}
+  .ta{resize:vertical;min-height:84px;line-height:1.5}.ta.big{min-height:120px}
+  .ipt:focus,.ta:focus,.sel:focus{border-color:var(--accent)}
+  .sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .hint{font-size:12px;color:var(--text-faint);margin-top:6px;line-height:1.5;font-family:'Hanken Grotesk',system-ui,sans-serif}
+  .group-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:700;margin:8px 0 12px;font-family:'IBM Plex Mono',monospace}
+  .synth-btn{width:100%;background:var(--accent);color:var(--on-accent);padding:13px;border-radius:9px;font-weight:600;font-family:var(--font-head);letter-spacing:.03em;transition:all 140ms ease}
+  .synth-btn:hover:not(:disabled){filter:brightness(1.08)}.synth-btn:disabled{opacity:.5}
+  .swatch-row{display:flex;align-items:center;gap:10px}
+  .swatch-row input[type=color]{width:46px;height:40px;border:1px solid var(--border);border-radius:8px;background:none;padding:3px;cursor:pointer}
+  .preview{border:1px solid var(--prev-border);border-radius:14px;overflow:hidden;margin-top:6px;background-color:var(--prev-bg);background-image:var(--prev-bgimg);background-size:var(--prev-bgsize)}
+  .preview-top{display:flex;align-items:center;gap:11px;padding:13px 15px;border-bottom:1px solid var(--prev-border)}
+  .preview-g{width:36px;height:36px;border-radius:9px;overflow:hidden}
+  .preview-name{font-family:var(--prev-head);font-weight:600;color:var(--prev-text);font-size:15px;letter-spacing:var(--prev-tr)}
+  .preview-role{font-size:10px;color:var(--prev-accent);text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-top:3px;font-family:'Hanken Grotesk',sans-serif}
+  .preview-body{padding:16px 15px;display:flex;flex-direction:column;gap:11px;font-family:var(--prev-body)}
+  .pv-msg{max-width:84%;padding:10px 14px;line-height:1.5;font-size:13.5px}
+  .pv-user{align-self:flex-end;background:var(--prev-accent);color:var(--prev-onacc);border-radius:var(--prev-radius)}
+  .pv-asst{align-self:flex-start;color:var(--prev-text)}
+  .preview.bubbled .pv-asst{background:var(--prev-asstbg);border:1px solid var(--prev-asstborder);border-radius:var(--prev-radius)}
+  .preview:not(.bubbled) .pv-msg{max-width:100%;padding:6px 0;border-radius:0}
+  .preview:not(.bubbled) .pv-user{align-self:stretch;background:none;color:var(--prev-dim);font-style:italic}
+  .studio-foot{flex:none;padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px}
+  .studio-foot .save{flex:1;background:var(--accent);color:var(--on-accent);padding:12px;border-radius:9px;font-weight:600;font-family:var(--font-head);letter-spacing:.03em;transition:filter 140ms ease}
+  .studio-foot .save:hover{filter:brightness(1.08)}
+  .studio-foot .cancel{padding:12px 20px;border:1px solid var(--border);border-radius:9px;color:var(--text-dim);font-weight:500;font-family:'Hanken Grotesk',sans-serif}
+  .studio-foot .cancel:hover{border-color:var(--border-strong);color:var(--text)}
+
+  /* SETTINGS modal */
+  .set-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.97);z-index:60;width:min(480px,calc(100% - 32px));max-height:86vh;overflow-y:auto;background:var(--panel);border:1px solid var(--border-strong);border-radius:14px;padding:22px 24px;box-shadow:0 24px 70px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease}
+  .set-modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-bottom:12px;cursor:pointer;font-family:'Hanken Grotesk',sans-serif}
+  .check input{margin-top:2px;flex:none;accent-color:var(--accent);width:15px;height:15px}
+  .check code,.hint code{font-family:'IBM Plex Mono',monospace;font-size:.85em;background:var(--code-bg);padding:.05em .35em;border-radius:4px;border:1px solid var(--border)}
+  .ok{background:rgba(70,170,110,.12);border:1px solid rgba(70,170,110,.4);color:#7c9;padding:10px 13px;border-radius:8px;font-size:13px;margin-bottom:4px;font-family:'Hanken Grotesk',sans-serif}
+  .err{background:rgba(220,80,60,.12);border:1px solid rgba(220,80,60,.4);color:#e88;padding:10px 13px;border-radius:8px;font-size:13px;margin-bottom:14px;font-family:'Hanken Grotesk',sans-serif;line-height:1.5}
+  .ghost-btn.tuned.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .ghost-btn.tuned.learning{color:var(--accent);border-color:var(--accent-soft)}
+  .ghost-btn.tuned.learning{animation:pulse 1.1s ease-in-out infinite}
+  .mem-note{font-size:12.5px;color:var(--text-dim);line-height:1.6;font-family:'Hanken Grotesk',sans-serif;margin:14px 0 4px}
+  .radar-wrap{display:flex;justify-content:center;padding:10px 0 2px}
+  .radar-cap{text-align:center;font-size:11px;color:var(--text-faint);font-family:'Hanken Grotesk',sans-serif;margin:2px 0 16px}
+  .trait-list{margin:2px 0 18px}
+  .trait{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .trait .tn{width:76px;font-size:12px;color:var(--text-dim);font-family:'Hanken Grotesk',sans-serif;font-weight:600}
+  .trait .tb{flex:1;height:6px;background:var(--border);border-radius:4px;overflow:hidden}
+  .trait .tf{display:block;height:100%;border-radius:4px;transition:width .45s cubic-bezier(.2,.7,.3,1)}
+  .trait .tv{width:28px;text-align:right;font-size:11px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace}
+  .pf-modal{width:min(560px,calc(100% - 32px))}
+  .pf-body{font-family:var(--font-body);line-height:1.7;font-size:14.5px;color:var(--text);margin:6px 0 4px}
+  .pf-body p{margin:0 0 .8em}.pf-body p:last-child{margin-bottom:0}
+  .pf-empty{text-align:center;padding:24px 10px;color:var(--text-dim);font-family:'Hanken Grotesk',sans-serif;font-size:13.5px;line-height:1.6}
+  .pf-empty .big{font-size:34px;margin-bottom:12px}
+  .pf-evo{margin-top:20px;border-top:1px solid var(--border);padding-top:16px}
+  .pf-evo-h{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:700;font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+  .pf-snap{border-left:2px solid var(--accent-soft);padding:2px 0 2px 14px;margin-bottom:14px;cursor:pointer}
+  .pf-snap:hover{border-left-color:var(--accent)}
+  .pf-date{font-size:11px;color:var(--accent);font-weight:700;font-family:'Hanken Grotesk',sans-serif;letter-spacing:.04em}
+  .pf-prev{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:5px;font-family:var(--font-body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pf-snap.open .pf-prev{-webkit-line-clamp:unset;overflow:visible}
+  .meter{display:flex;gap:4px;margin:2px 0 8px}
+  .meter i{height:5px;flex:1;border-radius:3px;background:var(--border)}
+  .meter i.on{background:var(--accent)}
+
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes blink{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  @keyframes blockblink{0%,50%{opacity:1}51%,100%{opacity:0}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @keyframes corepulse{0%,100%{opacity:1}50%{opacity:.45}}
+  @keyframes edgedraw{0%,100%{opacity:1}50%{opacity:.55}}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}.scroll{scroll-behavior:auto}.t-caret{animation:none}}
+
+  .rail-x{display:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);place-items:center;font-size:15px;color:var(--text-dim);margin-left:auto}
+  .rail-head{display:flex;align-items:center}
+  .rail-divider{height:1px;background:var(--border);margin:14px 6px 4px}
+  .fam{flex:none;display:grid;place-items:center;opacity:.95}
+  .fam-big{display:flex;align-items:center;gap:18px;margin:16px 0 10px}
+  .fam-core{animation:corepulse 1.6s ease-in-out infinite}
+  .fam-edge{animation:edgedraw 1.8s ease-in-out infinite}
+  .fam-tier{font-family:var(--font-head);font-size:22px;font-weight:700;letter-spacing:var(--tr);color:var(--text)}
+  .fam-desc{font-size:13px;color:var(--text-dim);margin-top:3px;font-family:'Hanken Grotesk',sans-serif}
+  .fam-pct{font-size:11px;color:var(--accent);font-weight:700;margin-top:8px;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em}
+  .fam-ladder{display:flex;flex-wrap:wrap;gap:0;font-size:11px;font-family:'Hanken Grotesk',sans-serif;padding:10px 0 6px;line-height:1.8}
+  .intake-h{font-family:var(--font-head);font-weight:700;font-size:16px;margin:14px 0 4px}
+  .intake-h span{color:var(--text-faint);font-weight:500;font-size:12px;font-family:'Hanken Grotesk',sans-serif}
+  .iq{margin-bottom:16px}
+  .iq-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:9px;font-family:'Hanken Grotesk',sans-serif}
+  .iq-opts{display:flex;flex-wrap:wrap;gap:8px}
+  .iopt{padding:9px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--text-dim);background:var(--bg2);transition:all 120ms ease;font-family:'Hanken Grotesk',sans-serif}
+  .iopt:hover{border-color:var(--border-strong);color:var(--text)}
+  .iopt.sel{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+  .intake-sum{font-size:12px;color:var(--text-dim);background:var(--accent-soft);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin:12px 0 4px;line-height:1.5;font-family:'Hanken Grotesk',sans-serif}
+  .intake-sum button{color:var(--accent);font-weight:700;text-decoration:underline;font-size:12px;margin-left:4px}
+
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr}
+    .rail{position:fixed;left:0;top:0;height:100vh;height:100dvh;width:100vw;z-index:45;transform:translateX(-100%);transition:transform .28s ease}
+    .rail.open{transform:translateX(0)}
+    .menu-btn{display:grid}
+    .rail-x{display:grid}
+    .rail-head{padding:max(18px,env(safe-area-inset-top)) 18px 12px}
+    .rail-foot{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+    .thread,.composer,.empty,.composer-hint{max-width:100%}
+    .rail-scroll{padding:6px 16px 24px}
+    .mode-item{padding:13px 12px}
+    html[data-surface="mobile"] .thread,html[data-surface="mobile"] .composer,html[data-surface="mobile"] .composer-hint,html[data-surface="mobile"] .empty{max-width:100%}
+  }
+  @media (max-width:600px){
+    .topbar{padding:max(11px,env(safe-area-inset-top)) 14px 11px;gap:11px}
+    .menu-btn{width:40px;height:40px;font-size:17px}
+    .top-glyph{width:38px;height:38px;font-size:18px;border-radius:11px}
+    .top-name{font-size:15px}.top-role{font-size:9.5px;letter-spacing:.08em}
+    .top-actions{gap:6px}
+    .top-actions .ghost-btn{width:40px;height:40px;padding:0;justify-content:center;font-size:15px;border-radius:10px}
+    .ghost-btn .lbl{display:none}
+
+    .scroll{padding-bottom:4px}
+    .thread{padding:22px 18px 28px}
+    .empty{padding:18px;min-height:74dvh;display:flex;flex-direction:column;justify-content:center}
+    .empty .eg{width:60px;height:60px;font-size:28px;margin-bottom:18px}
+    .empty h1{font-size:27px}
+    .empty p{font-size:15px;margin-bottom:26px}
+    .chips{flex-direction:column;width:100%;gap:9px}
+    .chip{width:100%;padding:15px 16px;font-size:14.5px}
+
+    .composer-wrap{padding:0 14px max(14px,env(safe-area-inset-bottom))}
+    .composer{padding:9px 9px 9px 15px;border-radius:14px}
+    html[data-form="bubbles"] .composer{border-radius:24px}
+    .composer textarea{font-size:16px;padding:8px 0}
+    .send{padding:12px 18px;font-size:13px}
+    .send.round{width:44px;height:44px}
+    .composer-hint{display:none}
+
+    .ipt,.ta,.sel,.iopt{font-size:16px}
+    .iopt{padding:11px 16px}
+    .grid2,.grid3{grid-template-columns:1fr;gap:10px}
+    .studio-body{padding:18px 18px 30px}
+    .studio-head{padding:max(18px,env(safe-area-inset-top)) 18px 0}
+    .studio-foot{padding:14px 18px max(14px,env(safe-area-inset-bottom))}
+    .studio-foot .save,.studio-foot .cancel{padding:14px}
+    .set-modal{padding:20px 18px;max-height:88dvh}
+    .x-btn{width:38px;height:38px}
+    .fam-big{gap:14px}.fam-big svg{width:88px;height:88px}
+    .fam-tier{font-size:20px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail">
+    <div class="rail-head"><span class="wordmark"><span class="dot"></span>myst<span class="wm-dot">.</span>you</span><button class="rail-x" id="railX" title="Close">✕</button></div>
+    <div class="rail-scroll">
+      <button class="portrait-btn" id="portraitBtn">
+        <span class="pic">◐</span>
+        <span><span class="pt">Your Portrait</span><span class="ps">who you are, across every mode</span></span>
+      </button>
+      <button class="new-mode" id="newModeBtn"><span>New mode</span><span class="plus">+</span></button>
+      <div class="rail-divider"></div>
+      <div class="rail-label">Presets</div>
+      <div id="presetList"></div>
+      <div class="rail-label" id="customLabel" style="display:none">Your modes</div>
+      <div id="customList"></div>
+    </div>
+    <div class="rail-foot">The interface becomes whoever you ask for.</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn">☰</button>
+      <div class="top-glyph" id="topGlyph">∿</div>
+      <div class="top-meta">
+        <div class="top-name" id="topName">Quant Desk</div>
+        <div class="top-role" id="topRole">Quantitative Research Desk</div>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-btn tuned" id="tunedBtn" title="What this mode has learned about you">✦<span class="lbl"> Adapt</span></button>
+        <button class="ghost-btn" id="editBtn" title="Edit this mode's design">✎<span class="lbl"> Tune</span></button>
+        <button class="ghost-btn" id="clearBtn" title="New conversation">↺<span class="lbl"> Reset</span></button>
+        <button class="ghost-btn" id="settingsBtn" title="Connection settings">⚙</button>
+      </div>
+    </header>
+    <div class="scroll" id="scroll">
+      <div id="thread" class="thread" style="display:none"></div>
+      <div id="empty" class="empty"></div>
+    </div>
+    <div class="composer-wrap">
+      <div class="composer" id="composer">
+        <span class="cue">›</span>
+        <textarea id="input" rows="1" placeholder="Ask anything…"></textarea>
+        <button class="send" id="send">Send</button>
+      </div>
+      <div class="composer-hint" id="cHint"></div>
+    </div>
+  </main>
+</div>
+
+<!-- STUDIO -->
+<div class="scrim" id="scrim"></div>
+<aside class="studio" id="studio">
+  <div class="studio-head">
+    <div class="hrow">
+      <div><div class="studio-title">Mode Studio</div><div class="studio-sub">Design how it behaves — and how the whole interface is shaped.</div></div>
+      <button class="x-btn" id="closeStudio">✕</button>
+    </div>
+    <div class="tabs"><button class="tab active" data-tab="describe">Describe it</button><button class="tab" data-tab="build">Build it</button></div>
+  </div>
+  <div class="studio-body">
+    <div id="studioErr"></div>
+    <div class="pane active" data-pane="describe">
+      <div class="field"><label>Describe the mode you want</label>
+        <textarea class="ta big" id="describeInput" placeholder="e.g. A grizzled night-shift sysadmin — clipped, dry, terminal aesthetic. Or: a Michelin sommelier who recommends one bottle, never a list. Or: a Socratic philosophy tutor who answers questions with questions."></textarea>
+        <div class="hint">Claude writes the behaviour, assigns a job title, and picks a matching interface form. Tune everything in <b>Build it</b> after.</div></div>
+      <button class="synth-btn" id="synthBtn">✦ Synthesize mode</button>
+    </div>
+    <div class="pane" data-pane="build">
+      <div class="grid2">
+        <div class="field"><label>Name</label><input class="ipt" id="f_name" placeholder="Quant Desk"></div>
+        <div class="field"><label>Glyph</label><input class="ipt" id="f_glyph" maxlength="2" placeholder="∿"></div>
+      </div>
+      <div class="field"><label>Role / title</label><input class="ipt" id="f_role" placeholder="Quantitative Research Desk"><div class="hint">A job title or a function — shown on the landing page and header.</div></div>
+      <div class="field"><label>Tagline</label><input class="ipt" id="f_tag" placeholder="Signal over noise."></div>
+      <div class="field"><label>Behaviour (system prompt)</label><textarea class="ta big" id="f_sys"></textarea></div>
+      <div class="field"><label>Input placeholder</label><input class="ipt" id="f_ph" placeholder="Ask anything…"></div>
+      <div class="field"><label>Opening suggestions (one per line)</label><textarea class="ta" id="f_sug"></textarea></div>
+
+      <div class="group-label">Format</div>
+      <div class="grid2">
+        <div class="field"><label>Interface form</label><select class="sel" id="f_form">
+          <option value="terminal">Terminal — command log</option><option value="transcript">Transcript — session notes</option>
+          <option value="bubbles">Bubbles — chat</option><option value="manuscript">Manuscript — typeset prose</option>
+          <option value="brief">Brief — decision blocks</option><option value="answer">Answer — bare &amp; large</option></select></div>
+        <div class="field"><label>Optimized for</label><select class="sel" id="f_surface">
+          <option value="desktop">Desktop</option><option value="mobile">Mobile</option><option value="either">Either</option></select></div>
+      </div>
+
+      <div class="group-label">Look &amp; feel</div>
+      <div class="grid2">
+        <div class="field"><label>Scheme</label><select class="sel" id="f_scheme"><option value="light">Light</option><option value="dark">Dark</option></select></div>
+        <div class="field"><label>Accent</label><div class="swatch-row"><input type="color" id="f_accent" value="#3ddc97"><input class="ipt" id="f_accent_hex" value="#3ddc97" style="flex:1"></div></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Typeface</label><select class="sel" id="f_font"><option value="sans">Plex Sans</option><option value="grotesk">Hanken</option><option value="serif">Newsreader</option><option value="editorial">Fraunces</option><option value="mono">Plex Mono</option><option value="display">Archivo</option></select></div>
+        <div class="field"><label>Mood</label><select class="sel" id="f_mood"><option value="calm">Calm</option><option value="warm">Warm</option><option value="clinical">Clinical</option><option value="austere">Austere</option><option value="intense">Intense</option><option value="playful">Playful</option><option value="luxe">Luxe</option></select></div>
+        <div class="field"><label>Density</label><select class="sel" id="f_density"><option value="compact">Compact</option><option value="comfortable">Comfortable</option><option value="airy">Airy</option></select></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Corners</label><select class="sel" id="f_corners"><option value="sharp">Sharp</option><option value="soft">Soft</option><option value="round">Round</option></select></div>
+        <div class="field"><label>Backdrop</label><select class="sel" id="f_pattern"><option value="none">None</option><option value="grid">Grid</option><option value="dots">Dots</option><option value="paper">Paper</option><option value="gradient">Glow</option></select></div>
+        <div class="field"><label>Motion</label><select class="sel" id="f_motion"><option value="instant">Instant</option><option value="normal">Normal</option><option value="calm">Calm</option></select></div>
+      </div>
+
+      <div class="group-label">Preview</div>
+      <div class="preview" id="preview">
+        <div class="preview-top"><div class="preview-g" id="pvG">∿</div><div><div class="preview-name" id="pvName">Quant Desk</div><div class="preview-role" id="pvRole">Quantitative Research Desk</div></div></div>
+        <div class="preview-body"><div class="pv-msg pv-user">What am I not accounting for?</div><div class="pv-msg pv-asst">Three blind spots, ranked by cost…</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="studio-foot"><button class="save" id="saveMode">Save &amp; use</button><button class="cancel" id="cancelStudio">Cancel</button></div>
+</aside>
+
+<!-- SETTINGS -->
+<div class="scrim" id="setScrim"></div>
+<div class="set-modal" id="setModal">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div><div class="studio-title">Connection</div><div class="studio-sub">How this file reaches the model.</div></div>
+    <button class="x-btn" id="closeSet">✕</button>
+  </div>
+  <div id="setErr"></div>
+  <div class="field" style="margin-top:18px"><label>Endpoint</label><input class="ipt" id="s_endpoint"><div class="hint">Anthropic's Messages API by default. Point at a local proxy if you run one.</div></div>
+  <div class="field"><label>API key</label><input class="ipt" id="s_key" type="password" placeholder="sk-ant-…" autocomplete="off"><div class="hint">Leave blank inside the Claude.ai sandbox. Stored only if you tick remember.</div></div>
+  <label class="check"><input type="checkbox" id="s_direct"> <span>Direct browser access — sends <code>anthropic-dangerous-direct-browser-access</code>. Needed for a standalone <code>file://</code> page.</span></label>
+  <label class="check"><input type="checkbox" id="s_remember"> <span>Remember key in this browser (localStorage)</span></label>
+  <div style="display:flex;gap:10px;margin-top:22px">
+    <button class="save" id="saveSet" style="flex:1;background:var(--accent);color:var(--on-accent);padding:12px;border-radius:9px;font-weight:600;font-family:var(--font-head)">Save</button>
+    <button class="cancel" id="testSet" style="padding:12px 20px;border:1px solid var(--border);border-radius:9px;color:var(--text-dim);font-weight:500;font-family:'Hanken Grotesk',sans-serif">Test</button>
+  </div>
+</div>
+
+<!-- MEMORY / ADAPTATION -->
+<div class="scrim" id="memScrim"></div>
+<div class="set-modal" id="memModal">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div><div class="studio-title">Adaptation</div><div class="studio-sub" id="memSub">What this mode has learned about you.</div></div>
+    <button class="x-btn" id="closeMem">✕</button>
+  </div>
+  <div id="famBlock"></div>
+  <div class="mem-note">Built quietly from your conversations, this profile steers how this mode talks to <i>you</i> — kept separate from how anyone else uses it, and stored only on this device. It records interaction <i>style</i>, never private details. Edit or clear it anytime.</div>
+  <div class="field"><label>Learned profile</label><textarea class="ta big" id="memText" placeholder="Nothing learned yet — chat a little and this fills in."></textarea></div>
+  <div style="display:flex;gap:10px">
+    <button class="save" id="saveMem" style="flex:1;background:var(--accent);color:var(--on-accent);padding:12px;border-radius:9px;font-weight:600;font-family:var(--font-head)">Save</button>
+    <button class="cancel" id="clearMem" style="padding:12px 20px;border:1px solid var(--border);border-radius:9px;color:var(--text-dim);font-weight:500;font-family:'Hanken Grotesk',sans-serif">Clear</button>
+  </div>
+</div>
+
+<!-- PORTRAIT -->
+<div class="scrim" id="pfScrim"></div>
+<div class="set-modal pf-modal" id="pfModal">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div><div class="studio-title">Your Portrait</div><div class="studio-sub">A reflection drawn from how you use each mode.</div></div>
+    <button class="x-btn" id="closePf">✕</button>
+  </div>
+  <div id="pfContent"></div>
+  <div style="display:flex;gap:10px;margin-top:18px">
+    <button class="save" id="composePf" style="flex:1;background:var(--accent);color:var(--on-accent);padding:12px;border-radius:9px;font-weight:600;font-family:var(--font-head)">Compose portrait</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_ENDPOINT="https://api.anthropic.com/v1/messages";
+const MODEL="claude-sonnet-4-20250514";
+let conn={endpoint:DEFAULT_ENDPOINT,key:"",direct:false,remember:false};
+try{const s=JSON.parse(localStorage.getItem('mode_conn')||'null');if(s)conn=Object.assign(conn,s);}catch(e){}
+// Per-user, per-mode adaptation profiles. localStorage where allowed (file://); in-memory in the sandbox.
+let userProfiles={};
+try{userProfiles=JSON.parse(localStorage.getItem('mode_profiles')||'{}')||{};}catch(e){}
+let portrait={snapshots:[]};
+try{const p=JSON.parse(localStorage.getItem('mode_portrait')||'null');if(p&&p.snapshots)portrait=p;}catch(e){}
+let usage={};
+try{usage=JSON.parse(localStorage.getItem('mode_usage')||'{}')||{};}catch(e){}
+let intake={done:false,answers:{}};
+try{const i=JSON.parse(localStorage.getItem('mode_intake')||'null');if(i)intake=i;}catch(e){}
+let intakeDraft={};
+function persistUsage(){try{localStorage.setItem('mode_usage',JSON.stringify(usage));}catch(e){}}
+function persistIntake(){try{localStorage.setItem('mode_intake',JSON.stringify(intake));}catch(e){}}
+function persistCustom(){try{localStorage.setItem('mode_custom',JSON.stringify(customModes));}catch(e){}}
+function bumpUsage(id,field){usage[id]=usage[id]||{turns:0,reflections:0};usage[id][field]=(usage[id][field]||0)+1;usage[id].lastAt=Date.now();persistUsage();}
+
+/* ---- color utils ---- */
+function hexN(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};}
+function toHex(r,g,b){const c=v=>('0'+Math.max(0,Math.min(255,Math.round(v))).toString(16)).slice(-2);return'#'+c(r)+c(g)+c(b);}
+function mix(a,b,t){const A=hexN(a),B=hexN(b);return toHex(A.r+(B.r-A.r)*t,A.g+(B.g-A.g)*t,A.b+(B.b-A.b)*t);}
+function alpha(h,a){const{r,g,b}=hexN(h);return`rgba(${r},${g},${b},${a})`;}
+function lum(h){const{r,g,b}=hexN(h);const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);};return .2126*f(r)+.7152*f(g)+.0722*f(b);}
+function validHex(s){return/^#?[0-9a-fA-F]{6}$/.test(s)||/^#?[0-9a-fA-F]{3}$/.test(s);}
+function normAccent(a){return (a&&validHex(a))?(a[0]==='#'?a:'#'+a):'#888888';}
+function hash(s){let h=0;s=s||'';for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+
+/* ---- generative avatars ---- */
+const MOTIF_BY_ID={quant:'wave',therapist:'ripple',confidant:'bloom',operator:'arrow',oracle:'gem',essayist:'quill',tutor:'arc',concierge:'key'};
+const MOTIF={
+ wave:c=>`<path d="M14 57 Q32 31 50 57 T86 57" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round"/><path d="M14 45 Q32 19 50 45 T86 45" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" opacity=".4"/>`,
+ ripple:c=>`<circle cx="50" cy="50" r="10.5" fill="${c}"/><circle cx="50" cy="50" r="21" fill="none" stroke="${c}" stroke-width="3.6" opacity=".7"/><circle cx="50" cy="50" r="32" fill="none" stroke="${c}" stroke-width="3" opacity=".36"/>`,
+ bloom:c=>`<g fill="${c}"><circle cx="50" cy="37" r="12.5" opacity=".9"/><circle cx="37" cy="58" r="12.5" opacity=".68"/><circle cx="63" cy="58" r="12.5" opacity=".68"/><circle cx="50" cy="52" r="8.5"/></g>`,
+ arrow:c=>`<path d="M34 28 L60 50 L34 72" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M53 28 L79 50 L53 72" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".38"/>`,
+ gem:c=>`<path d="M50 18 L80 45 L50 84 L20 45 Z" fill="${c}" opacity=".92"/><path d="M20 45 H80 M50 18 V84 M50 18 L35 45 M50 18 L65 45" stroke="#fff" stroke-opacity=".28" stroke-width="2" fill="none"/>`,
+ quill:c=>`<path d="M30 74 L70 30" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M70 30 l-3 13 -13 3 z" fill="${c}"/><circle cx="31" cy="73" r="4.5" fill="${c}"/>`,
+ arc:c=>`<path d="M22 64 A30 30 0 0 1 78 64" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round"/><g stroke="${c}" stroke-width="3" opacity=".55" stroke-linecap="round"><path d="M50 33 V41"/><path d="M30 44 l5 6"/><path d="M70 44 l-5 6"/></g><circle cx="50" cy="64" r="4.2" fill="${c}"/>`,
+ key:c=>`<circle cx="40" cy="42" r="14" fill="none" stroke="${c}" stroke-width="8"/><path d="M50 51 L74 75" stroke="${c}" stroke-width="8" stroke-linecap="round"/><path d="M64 65 l8 8 M70 59 l8 8" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`,
+ _gen:(c,seed)=>{let s=`<circle cx="50" cy="50" r="26" fill="none" stroke="${c}" stroke-width="4" opacity=".5"/><circle cx="50" cy="50" r="9" fill="${c}"/>`;
+   let r=(seed||1)>>>0;const rnd=()=>{r=(r*1103515245+12345)&0x7fffffff;return r/0x7fffffff;};
+   for(let i=0;i<4;i++){const a=rnd()*6.283,rr=20+rnd()*15,x=50+Math.cos(a)*rr,y=50+Math.sin(a)*rr;s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3+rnd()*3).toFixed(1)}" fill="${c}" opacity="${(.5+rnd()*.5).toFixed(2)}"/>`;}return s;}
+};
+function gMotif(g){return c=>`<text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-family="'Hanken Grotesk',system-ui,sans-serif" font-size="48" font-weight="600" fill="${c}">${esc(g)}</text>`;}
+function avatarSVG(m,shape){
+  const ac=normAccent(m.accent),on=lum(ac)>.62?'#101214':'#ffffff';
+  const light=mix(ac,'#ffffff',.30),dark=mix(ac,'#000000',.42),id='av'+hash((m.id||m.name||'')+shape);
+  const rad=0,seed=hash(m.id||m.name||'x');
+  const mk=MOTIF_BY_ID[m.id]?MOTIF[MOTIF_BY_ID[m.id]]:(m.glyph?gMotif(m.glyph):MOTIF._gen);
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%">`
+   +`<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient>`
+   +`<radialGradient id="${id}h" cx="0.32" cy="0.24" r="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="0.55" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`
+   +`<rect width="100" height="100" rx="${rad}" fill="url(#${id})"/><g>${mk(on,seed)}</g>`
+   +`<rect width="100" height="100" rx="${rad}" fill="url(#${id}h)"/>`
+   +`<rect x="0.6" y="0.6" width="98.8" height="98.8" rx="${rad}" fill="none" stroke="#fff" stroke-opacity="0.13"/></svg>`;
+}
+
+/* ---- trait radar ---- */
+const TRAITS=[{k:'precision',l:'Precision'},{k:'drive',l:'Drive'},{k:'candor',l:'Candor'},{k:'warmth',l:'Warmth'},{k:'curiosity',l:'Curiosity'},{k:'craft',l:'Craft'}];
+function radarSVG(v,size,accent,labels){
+  const n=TRAITS.length,cx=size/2,cy=size/2,R=size/2-(labels?size*0.18:size*0.07);
+  const ang=i=>(-90+i*360/n)*Math.PI/180,pt=(i,r)=>[cx+Math.cos(ang(i))*r,cy+Math.sin(ang(i))*r];
+  let s=`<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block;max-width:100%;height:auto;overflow:visible">`;
+  for(let g=1;g<=4;g++){const p=TRAITS.map((_,i)=>pt(i,R*g/4).map(x=>x.toFixed(1)).join(',')).join(' ');s+=`<polygon points="${p}" fill="none" stroke="${alpha(accent,.13)}" stroke-width="1"/>`;}
+  TRAITS.forEach((_,i)=>{const[x,y]=pt(i,R);s+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${alpha(accent,.16)}" stroke-width="1"/>`;});
+  const dp=TRAITS.map((t,i)=>pt(i,R*Math.max(5,(v[t.k]||0))/100).map(x=>x.toFixed(1)).join(',')).join(' ');
+  s+=`<polygon points="${dp}" fill="${alpha(accent,.26)}" stroke="${accent}" stroke-width="2" stroke-linejoin="round"/>`;
+  TRAITS.forEach((t,i)=>{const[x,y]=pt(i,R*Math.max(5,(v[t.k]||0))/100);s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${size>140?3:2}" fill="${accent}"/>`;});
+  if(labels)TRAITS.forEach((t,i)=>{const[x,y]=pt(i,R+size*0.11);const a=Math.abs(x-cx)<3?'middle':(x>cx?'start':'end');s+=`<text x="${x.toFixed(1)}" y="${(y+size*0.018).toFixed(1)}" text-anchor="${a}" font-family="'Hanken Grotesk',sans-serif" font-size="${(size*0.046).toFixed(1)}" font-weight="600" fill="${alpha(accent,.9)}">${t.l}</text>`;});
+  return s+'</svg>';
+}
+function currentTraits(){
+  const sn=portrait.snapshots;
+  if(sn.length&&sn[sn.length-1].traits)return sn[sn.length-1].traits;
+  const fam=allModes().reduce((a,m)=>a+familiarity(m.id),0)/Math.max(1,allModes().length);
+  const t={};TRAITS.forEach(x=>t[x.k]=Math.max(6,Math.round(fam*0.55)));
+  if(intake.done){const a=intake.answers;
+    if(a.length==='Terse'){t.precision+=12;t.candor+=8;}if(a.length==='Thorough'){t.curiosity+=12;t.craft+=8;}
+    if(a.tone==='Blunt')t.candor+=18;if(a.tone==='Warm')t.warmth+=18;
+    if(a.feedback==='Straight talk')t.candor+=12;if(a.feedback==='To debate it'){t.drive+=10;t.curiosity+=8;}
+    if(a.purpose==='Decide')t.drive+=16;if(a.purpose==='Learn')t.curiosity+=16;if(a.purpose==='Create')t.craft+=16;if(a.purpose==='Think aloud'){t.warmth+=8;t.curiosity+=8;}
+    if(a.warmth==='Love it')t.warmth+=8;if(a.warmth==='None')t.warmth-=6;}
+  TRAITS.forEach(x=>t[x.k]=Math.max(5,Math.min(100,Math.round(t[x.k]))));return t;
+}
+function updatePortraitPic(){const el=$('portraitBtn');if(!el)return;const pic=el.querySelector('.pic');if(pic)pic.innerHTML=radarSVG(currentTraits(),30,normAccent(active().accent),false);}
+
+const FONTS={
+  sans:{b:"'IBM Plex Sans',system-ui,sans-serif",h:"'IBM Plex Sans',system-ui,sans-serif",tr:"-0.01em"},
+  grotesk:{b:"'Hanken Grotesk',system-ui,sans-serif",h:"'Hanken Grotesk',system-ui,sans-serif",tr:"-0.012em"},
+  serif:{b:"'Newsreader',Georgia,serif",h:"'Newsreader',Georgia,serif",tr:"0"},
+  editorial:{b:"'Newsreader',Georgia,serif",h:"'Fraunces',Georgia,serif",tr:"-0.01em"},
+  mono:{b:"'IBM Plex Mono',ui-monospace,monospace",h:"'IBM Plex Mono',ui-monospace,monospace",tr:"0"},
+  display:{b:"'Hanken Grotesk',system-ui,sans-serif",h:"'Archivo',system-ui,sans-serif",tr:"-0.02em"},
+};
+const MOODTINT={calm:'#5f7d6e',warm:'#b07b45',clinical:'#5b7a99',austere:'#6b6b6b',intense:'#c0402f',playful:'#cf5a92',luxe:'#9a7b3f'};
+const RADII={sharp:['3px','3px'],soft:['12px','8px'],round:['22px','15px']};
+const DENS={compact:{gap:'10px',pad:'10px 14px',lh:'1.5',fs:'14.5px'},comfortable:{gap:'18px',pad:'13px 17px',lh:'1.62',fs:'15.5px'},airy:{gap:'30px',pad:'16px 20px',lh:'1.8',fs:'17px'}};
+const ANIM={instant:'0ms',normal:'180ms',calm:'420ms'};
+
+function buildTheme(p){
+  const dark=p.scheme==='dark';
+  const tint=MOODTINT[p.mood]||'#6b6b6b';
+  const bg=dark?mix('#0e0f11',tint,.06):mix('#ffffff',tint,.055);
+  const text=dark?mix('#eef0f2',tint,.04):mix('#191a1c',tint,.10);
+  const bg2=dark?mix(bg,'#ffffff',.045):mix(bg,'#000000',.022);
+  const panel=dark?mix(bg,'#000000',.30):mix(bg,'#000000',.028);
+  const border=alpha(text,dark?.14:.11),borderStrong=alpha(text,dark?.24:.18);
+  const accent=validHex(p.accent)?(p.accent[0]==='#'?p.accent:'#'+p.accent):'#3ddc97';
+  const onAccent=lum(accent)>.55?'#101214':'#ffffff';
+  const accentSoft=alpha(accent,dark?.18:.13);
+  const f=FONTS[p.font]||FONTS.sans;
+  const [radius,radiusSm]=RADII[p.corners]||RADII.soft;
+  const d=DENS[p.density]||DENS.comfortable;
+  const asstBg=dark?mix(bg,'#ffffff',.05):'#ffffff';
+  let maxw=p.surface==='mobile'?'480px':(p.surface==='desktop'?(d===DENS.compact?'860px':'820px'):'760px');
+  let bgImg='none',bgSize='auto';const line=alpha(text,.05);
+  if(p.pattern==='grid'){bgImg=`linear-gradient(${line} 1px,transparent 1px),linear-gradient(90deg,${line} 1px,transparent 1px)`;bgSize='42px 42px';}
+  else if(p.pattern==='dots'){bgImg=`radial-gradient(${alpha(text,dark?.07:.06)} 1.1px,transparent 1.2px)`;bgSize='22px 22px';}
+  else if(p.pattern==='paper'){bgImg=`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='${dark?.05:.045}'/%3E%3C/svg%3E")`;}
+  else if(p.pattern==='gradient'){bgImg=`radial-gradient(120% 75% at 82% -12%, ${alpha(accent,dark?.22:.16)}, transparent 58%)`;bgSize='cover';}
+  const shadow=dark?'0 1px 2px rgba(0,0,0,.35)':'0 1px 2px rgba(20,20,30,.06)';
+  const codeBg=dark?mix(bg,'#000000',.4):mix(bg2,'#000000',.045);
+  return {'--bg':bg,'--bg2':bg2,'--panel':panel,'--text':text,'--text-dim':alpha(text,dark?.62:.6),
+    '--text-faint':alpha(text,dark?.4:.42),'--border':border,'--border-strong':borderStrong,
+    '--accent':accent,'--on-accent':onAccent,'--accent-soft':accentSoft,'--user-bg':accent,'--user-text':onAccent,
+    '--asst-bg':asstBg,'--asst-text':text,'--asst-border':border,'--radius':radius,'--radius-sm':radiusSm,
+    '--font-head':f.h,'--font-body':f.b,'--tr':f.tr,'--gap':d.gap,'--pad':d.pad,'--lh':d.lh,'--maxw':maxw,'--fs':d.fs,
+    '--bg-image':bgImg,'--bg-size':bgSize,'--anim':ANIM[p.motion]||'180ms','--code-bg':codeBg,'--shadow':shadow};
+}
+function applyVars(el,t){for(const k in t)el.style.setProperty(k,t[k]);}
+
+/* ---- presets ---- */
+const PRESETS=[
+ {id:'quant',name:'Quant Desk',role:'Quantitative Research Desk',tag:'Signal over noise.',glyph:'∿',sendLabel:'RUN',
+  form:'terminal',surface:'desktop',scheme:'dark',accent:'#3ddc97',font:'mono',mood:'clinical',density:'compact',corners:'sharp',pattern:'grid',motion:'instant',
+  ph:'state the question — add constraints',
+  suggestions:['stress-test this assumption','EV of this bet, show the math','what am I not pricing in?'],
+  sys:'You are a quantitative research desk. Open with the call, then the evidence beneath it. Think in base rates, expected value, distributions and second-order effects. Quantify everything you can and attach an explicit confidence. Use terse, labelled blocks. State your assumptions and what would change your mind. No hedging, no pleasantries, no restating the prompt.'},
+ {id:'therapist',name:'Dr. Aline Voss',role:'Person-Centred Therapist',tag:'A space to think aloud.',glyph:'◍',sendLabel:'Share',
+  form:'transcript',surface:'either',scheme:'light',accent:'#6f9d86',font:'serif',mood:'calm',density:'airy',corners:'soft',pattern:'paper',motion:'calm',
+  ph:'Take your time. Start anywhere.',
+  suggestions:["I've been turning something over","Help me untangle how I feel","I'm not sure what I actually want"],
+  sys:'You hold a calm, person-centred therapeutic space. Lead with listening: reflect back what you hear in the speaker\u2019s own words, gently name the feeling underneath, and ask one open question at a time. Never rush to advice. Validate without judgement and never reinforce harsh self-talk. You are a supportive role, not a substitute for professional care \u2014 you do not diagnose or treat, and for anything clinical or any sign of crisis you warmly encourage reaching out to a qualified professional or someone trusted. Keep your tone unhurried and warm.'},
+ {id:'confidant',name:'Mara',role:'In your corner, always',tag:'I always pick up.',glyph:'♡',sendLabel:'Send',
+  form:'bubbles',surface:'mobile',scheme:'light',accent:'#ef6f96',font:'grotesk',mood:'playful',density:'comfortable',corners:'round',pattern:'gradient',motion:'normal',
+  ph:'hey, what\u2019s going on?',
+  suggestions:['I had a rough day','something good happened!','I just need to vent'],
+  sys:'You\u2019re the friend who always picks up \u2014 warm, present, a little playful, fiercely on their side. Match their energy. Text back like a real person: short, genuine, emotionally tuned-in. Celebrate the wins loudly, sit close in the hard moments, and keep it about them, not advice. Ask the caring follow-up. Human, never clinical.'},
+ {id:'operator',name:'Operator',role:'Chief of Staff',tag:'Every reply is a decision.',glyph:'▸',sendLabel:'DECIDE',
+  form:'brief',surface:'desktop',scheme:'dark',accent:'#ff7a1a',font:'display',mood:'intense',density:'comfortable',corners:'sharp',pattern:'none',motion:'instant',
+  ph:'what needs deciding?',
+  suggestions:['Should I ship or wait — call it','Tear apart this plan','Prioritise these five things'],
+  sys:'You are a chief of staff. Every reply is a decision and a next action. Open with the call in one bold line, then the reasoning in three points maximum, then the move. Be blunt, commit to a recommendation, and disagree plainly when they\u2019re wrong. Cut filler and qualifiers. End with the single most important next step.'},
+ {id:'oracle',name:'Oracle',role:'Answers, distilled',tag:'The shortest true thing.',glyph:'◆',sendLabel:'Ask',
+  form:'answer',surface:'either',scheme:'dark',accent:'#cfd2d6',font:'mono',mood:'austere',density:'airy',corners:'sharp',pattern:'none',motion:'instant',
+  ph:'one question.',
+  suggestions:['Define this in one line','Yes or no — and why','The single best option'],
+  sys:'Answer in the fewest words that fully resolve it \u2014 often a single line. Lead with the answer. No preamble, no caveats, no offers of more help. If asked to choose, choose. If code is the answer, give only the code. Precision and brevity are the whole job.'},
+ {id:'essayist',name:'The Essayist',role:'Writer in Residence',tag:'The long way round.',glyph:'❧',sendLabel:'Compose',
+  form:'manuscript',surface:'desktop',scheme:'light',accent:'#9a5b2c',font:'editorial',mood:'warm',density:'airy',corners:'soft',pattern:'paper',motion:'calm',
+  ph:'What shall we get into?',
+  suggestions:['Write me an essay on this','Explain it the scenic way','What do most people miss here?'],
+  sys:'You are a writer in residence. Reply in flowing, considered prose \u2014 essays, not bullet points. Take the scenic route: open with an arresting line, build with vivid examples, analogy and a little history, and let ideas breathe across paragraphs. Favour rhythm and craft. Assume a reader with time and taste.'},
+ {id:'tutor',name:'Mr. Okafor',role:'Patient Mentor',tag:'One step at a time.',glyph:'✎',sendLabel:'Ask',
+  form:'transcript',surface:'either',scheme:'light',accent:'#4f74d6',font:'serif',mood:'warm',density:'comfortable',corners:'soft',pattern:'dots',motion:'normal',
+  ph:'What are we learning today?',
+  suggestions:['Explain this like I\u2019m starting fresh','Quiz me on what I just said','I\u2019m stuck — walk me through it'],
+  sys:'You are a patient mentor. Teach by scaffolding: check what they already know, build one step at a time, and give a concrete example or analogy for every idea. Prefer guiding questions over hand-outs \u2014 let them reach it themselves. Encourage genuine effort, normalise confusion, and never make anyone feel slow. Confirm understanding before moving on.'},
+ {id:'concierge',name:'Auguste',role:'Personal Concierge',tag:'Consider it handled.',glyph:'◈',sendLabel:'Request',
+  form:'bubbles',surface:'mobile',scheme:'dark',accent:'#c9a24a',font:'editorial',mood:'luxe',density:'comfortable',corners:'round',pattern:'gradient',motion:'calm',
+  ph:'How may I help this evening?',
+  suggestions:['Plan an evening for two','Recommend one perfect bottle','Sort this out for me'],
+  sys:'You are a personal concierge of the old school \u2014 gracious, discreet, endlessly resourceful. Anticipate the need behind the request. Offer one considered recommendation with a reason, never a wall of options, and handle details with quiet competence. Warm and polished, never fawning. Make everything feel effortless.'},
+];
+let customModes=[];
+try{customModes=JSON.parse(localStorage.getItem('mode_custom')||'[]')||[];}catch(e){}
+let state={activeId:'quant',messages:[],loading:false,turnsSinceReflect:0,reflecting:false};
+const $=id=>document.getElementById(id);
+const allModes=()=>[...PRESETS,...customModes];
+const active=()=>allModes().find(m=>m.id===state.activeId)||PRESETS[0];
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const HINTS={terminal:'\u21B5 run \u00B7 \u21E7\u21B5 newline',transcript:'\u21B5 send \u00B7 \u21E7\u21B5 newline',manuscript:'\u21B5 send \u00B7 \u21E7\u21B5 newline',brief:'\u21B5 send \u00B7 \u21E7\u21B5 newline',answer:'\u21B5 ask',bubbles:''};
+
+function applyMode(m){
+  applyVars(document.documentElement,buildTheme(m));
+  document.documentElement.dataset.scheme=m.scheme;
+  document.documentElement.dataset.form=m.form||'bubbles';
+  document.documentElement.dataset.surface=m.surface||'either';
+  $('topGlyph').innerHTML=avatarSVG(m,'sq');$('topName').textContent=m.name;$('topRole').textContent=m.role||'';
+  $('input').placeholder=m.ph||'Ask anything…';
+  const send=$('send');
+  if(m.form==='bubbles'){send.classList.add('round');send.textContent='\u2191';}
+  else{send.classList.remove('round');send.textContent=m.sendLabel||'Send';}
+  $('cHint').textContent=HINTS[m.form]||'';
+  document.title='myst.you — '+m.name;
+  updateTuned();updatePortraitPic();
+}
+
+function renderRail(){
+  const make=m=>{const b=document.createElement('button');b.className='mode-item'+(m.id===state.activeId?' active':'');
+    const ac=(m.accent&&validHex(m.accent))?(m.accent[0]==='#'?m.accent:'#'+m.accent):'#888';
+    b.style.setProperty('--mc',ac);b.style.setProperty('--mc-soft',alpha(ac,.16));b.style.setProperty('--mc-line',alpha(ac,.5));
+    const sc=familiarity(m.id),t=tierOf(sc);
+    b.innerHTML=`<span class="glyph">${avatarSVG(m,'sq')}</span><span class="mode-meta"><span class="mode-name" style="font-family:${FONTS[m.font]?FONTS[m.font].h:"inherit"}">${esc(m.name)}</span><span class="mode-role">${esc(m.role||m.tag)}</span></span><span class="fam" title="${t.name} · ${sc}%">${famRings(sc,26,ac,false)}</span>`;
+    b.onclick=()=>{selectMode(m.id);closeRailMobile();};return b;};
+  const pl=$('presetList');pl.innerHTML='';PRESETS.forEach(m=>pl.appendChild(make(m)));
+  const cl=$('customList');cl.innerHTML='';customModes.forEach(m=>cl.appendChild(make(m)));
+  $('customLabel').style.display=customModes.length?'block':'none';
+  updatePortraitPic();
+}
+function selectMode(id){state.activeId=id;state.messages=[];state.turnsSinceReflect=0;applyMode(active());renderRail();renderThread();}
+
+/* tiny markdown -> .prose html */
+function fmt(src){
+  let s=esc(src);
+  s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,(m,l,c)=>'\u0000PRE\u0000'+btoa(unescape(encodeURIComponent(c.replace(/\n$/,''))))+'\u0000/PRE\u0000');
+  const out=s.split(/\n{2,}/).map(b=>{
+    if(b.includes('\u0000PRE\u0000'))return b;
+    const ls=b.split('\n');
+    if(ls.every(l=>/^\s*[-*]\s+/.test(l)))return '<ul>'+ls.map(l=>'<li>'+inl(l.replace(/^\s*[-*]\s+/,''))+'</li>').join('')+'</ul>';
+    if(ls.every(l=>/^\s*\d+[.)]\s+/.test(l)))return '<ol>'+ls.map(l=>'<li>'+inl(l.replace(/^\s*\d+[.)]\s+/,''))+'</li>').join('')+'</ol>';
+    if(/^###\s+/.test(b))return '<h4>'+inl(b.replace(/^###\s+/,''))+'</h4>';
+    if(/^##\s+/.test(b))return '<h3>'+inl(b.replace(/^##\s+/,''))+'</h3>';
+    return '<p>'+inl(b.replace(/\n/g,'<br>'))+'</p>';}).join('');
+  return out.replace(/\u0000PRE\u0000([^\u0000]*)\u0000\/PRE\u0000/g,(m,b)=>'<pre><code>'+esc(decodeURIComponent(escape(atob(b))))+'</code></pre>');
+}
+function inl(s){return s.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');}
+
+function nodeFor(form,msg){
+  const u=msg.role==='user';const html=u?esc(msg.content).replace(/\n/g,'<br>'):fmt(msg.content);
+  const m=active();const el=document.createElement('div');el.className='anim-in';
+  if(form==='terminal'){
+    if(u)el.innerHTML=`<div class="t-in"><span class="cue">\u203A</span><span class="txt">${esc(msg.content)}</span></div>`;
+    else el.innerHTML=`<div class="t-out"><div class="prose">${html}</div></div>`;
+  }else if(form==='transcript'){
+    el.className+=' x-turn '+(u?'user':'asst');
+    el.innerHTML=`<div class="x-who">${u?'You':esc(m.name)}</div><div class="x-say ${u?'':'prose'}">${html}</div>`;
+  }else if(form==='bubbles'){
+    el.className+=' b-row '+(u?'user':'asst');
+    el.innerHTML=u?`<div class="b-bub">${html}</div>`:`<div class="b-av">${avatarSVG(m,'circle')}</div><div class="b-bub prose">${html}</div>`;
+  }else if(form==='manuscript'){
+    if(u)el.innerHTML=`<div class="ms-ask"><span class="lbl">Prompt</span>${esc(msg.content)}</div>`;
+    else el.innerHTML=`<div class="ms-body"><div class="prose">${html}</div></div>`;
+  }else if(form==='brief'){
+    if(u)el.innerHTML=`<div class="bf-ask">Request — <b>${esc(msg.content)}</b></div>`;
+    else el.innerHTML=`<div class="bf-brief"><div class="prose">${html}</div></div>`;
+  }else if(form==='answer'){
+    if(u)el.innerHTML=`<div class="an-q">${esc(msg.content)}</div>`;
+    else el.innerHTML=`<div class="an-a"><div class="prose">${html}</div></div>`;
+  }else{
+    el.className+=' row '+(u?'user':'asst');el.innerHTML=`<div class="bubble ${u?'':'prose'}">${html}</div>`;
+  }
+  return el;
+}
+
+function renderThread(){
+  const t=$('thread'),e=$('empty'),m=active(),form=m.form||'bubbles';
+  if(state.messages.length===0&&!state.loading){
+    t.style.display='none';e.style.display='block';
+    e.innerHTML=`<div class="eg">${avatarSVG(m,'sq')}</div>${m.role?`<div class="role-badge">${esc(m.role)}</div>`:''}
+      <h1>${esc(m.name)}</h1><p>${esc(m.tag)}</p>
+      <div class="chips">${(m.suggestions||[]).map(s=>`<button class="chip">${esc(s)}</button>`).join('')}</div>`;
+    e.querySelectorAll('.chip').forEach((c,i)=>c.onclick=()=>{$('input').value=m.suggestions[i];send();});
+    return;
+  }
+  e.style.display='none';t.style.display='flex';t.innerHTML='';
+  state.messages.forEach(msg=>t.appendChild(nodeFor(form,msg)));
+  if(state.loading){
+    const el=document.createElement('div');
+    const tip='<div class="typing"><span></span><span></span><span></span></div>';
+    if(form==='terminal')el.innerHTML='<div class="t-out">'+tip+'</div>';
+    else if(form==='bubbles'){el.className='b-row asst';el.innerHTML=`<div class="b-av">${avatarSVG(m,'circle')}</div><div class="b-bub">${tip}</div>`;}
+    else if(form==='transcript'){el.className='x-turn asst';el.innerHTML=`<div class="x-who">${esc(m.name)}</div>`+tip;}
+    else el.innerHTML=tip;
+    t.appendChild(el);
+  }else if(form==='terminal'){
+    const c=document.createElement('div');c.innerHTML='<div class="t-in"><span class="cue">\u203A</span><span class="t-caret"></span></div>';t.appendChild(c);
+  }
+  requestAnimationFrame(()=>{$('scroll').scrollTop=$('scroll').scrollHeight;});
+}
+
+/* ---- Claude ---- */
+async function callClaude(system,messages,maxTokens){
+  const headers={'Content-Type':'application/json'};
+  if(conn.key){headers['x-api-key']=conn.key;headers['anthropic-version']='2023-06-01';}
+  if(conn.direct)headers['anthropic-dangerous-direct-browser-access']='true';
+  const res=await fetch(conn.endpoint||DEFAULT_ENDPOINT,{method:'POST',headers,body:JSON.stringify({model:MODEL,max_tokens:maxTokens||1000,system,messages})});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error.message||'API error');
+  return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+}
+async function send(){
+  const ipt=$('input'),text=ipt.value.trim();if(!text||state.loading)return;
+  state.messages.push({role:'user',content:text});ipt.value='';ipt.style.height='auto';
+  state.loading=true;$('send').disabled=true;renderThread();
+  let ok=false;
+  try{const r=await callClaude(effectiveSystem(active()),state.messages.map(m=>({role:m.role,content:m.content})));
+    state.loading=false;state.messages.push({role:'assistant',content:r||'(no response)'});ok=true;
+  }catch(err){state.loading=false;state.messages.push({role:'assistant',content:'\u26A0 Could not reach the model: '+err.message+'\n\nOpen the gear (\u2699) to set a key and enable direct browser access, or run inside the Claude.ai sandbox. Mode switching still works.'});}
+  $('send').disabled=false;renderThread();
+  if(ok){bumpUsage(active().id,'turns');renderRail();state.turnsSinceReflect++;const ut=state.messages.filter(x=>x.role==='user').length;
+    if(ut>=2&&state.turnsSinceReflect>=2&&!state.reflecting)reflect(active());}
+}
+
+/* ---- per-user adaptation ---- */
+function getProfile(id){return (userProfiles[id]&&userProfiles[id].notes)||'';}
+function setProfile(id,txt){if(txt&&txt.trim())userProfiles[id]={notes:txt.trim(),updatedAt:Date.now()};else delete userProfiles[id];persistProfiles();}
+function persistProfiles(){try{localStorage.setItem('mode_profiles',JSON.stringify(userProfiles));}catch(e){}}
+function effectiveSystem(m){
+  const parts=[];
+  if(intake.done)parts.push('Self-reported baseline preferences: '+intakeSummary()+'.');
+  const p=getProfile(m.id);
+  if(p)parts.push('Learned from how they actually use THIS mode (this takes precedence over the baseline): '+p);
+  if(!parts.length)return m.sys;
+  return m.sys+`\n\n[This is a returning user; adapt to them specifically — others use this mode differently. ${parts.join(' ')} Honour these in tone, length and approach unless they conflict with the mode's core purpose or safety.]`;
+}
+
+/* ---- self-reported intake ---- */
+const INTAKE=[
+ {k:'length',q:'Ideal answer length?',opts:['Terse','Balanced','Thorough']},
+ {k:'tone',q:'Preferred tone?',opts:['Warm','Neutral','Blunt']},
+ {k:'feedback',q:'When you\u2019re wrong, you want…',opts:['A gentle nudge','Straight talk','To debate it']},
+ {k:'format',q:'Default format?',opts:['Prose','Bullets','Whatever fits']},
+ {k:'purpose',q:'Mostly here to…',opts:['Decide','Learn','Create','Think aloud']},
+ {k:'warmth',q:'Emoji & warmth?',opts:['Love it','Sparingly','None']},
+];
+function intakeSummary(){return INTAKE.filter(x=>intake.answers[x.k]).map(x=>x.q.replace(/[?…]/g,'').toLowerCase().trim()+' \u2192 '+intake.answers[x.k]).join('; ');}
+
+/* ---- familiarity / relationship tiers ---- */
+const TIERS=[
+ {name:'Stranger',desc:'We\u2019ve barely spoken.'},
+ {name:'Acquaintance',desc:'Forming a first impression.'},
+ {name:'Familiar',desc:'Learning your patterns.'},
+ {name:'Confidant',desc:'Inside the circle now.'},
+ {name:'Kindred',desc:'Finishes your sentences.'},
+ {name:'Mirror',desc:'Knows you like you know you.'},
+];
+const TIER_MIN=[0,12,30,55,78,94];
+function tierOf(s){let i=0;for(let k=0;k<TIER_MIN.length;k++)if(s>=TIER_MIN[k])i=k;return Object.assign({i},TIERS[i]);}
+function familiarity(id){
+  let s=0;if(intake.done)s+=12;
+  const u=usage[id]||{turns:0,reflections:0};
+  s+=Math.min((u.turns||0)*5,46);
+  const p=getProfile(id);if(p){s+=14;s+=Math.min(Math.floor(p.length/26),18);}
+  s+=Math.min((u.reflections||0)*4,16);
+  return Math.min(Math.round(s),100);
+}
+function famRings(score,size,accent,animate){
+  const tier=tierOf(score).i,cx=size/2,cy=size/2,maxR=size/2-Math.max(1.5,size*0.06),n=5;
+  const sw=Math.max(1.3,size*0.042);let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="overflow:visible">`;
+  for(let i=0;i<n;i++){const r=maxR*(1-i*0.17);const lit=i<tier;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="${accent}" stroke-width="${sw}" opacity="${lit?1:.16}"${lit&&i===tier-1&&animate?' class="fam-edge"':''}/>`;}
+  const coreR=maxR*0.17,coreLit=tier>=3;
+  s+=`<circle cx="${cx}" cy="${cy}" r="${coreR.toFixed(1)}" fill="${coreLit?accent:'none'}" stroke="${accent}" stroke-width="${Math.max(1,size*0.03)}" opacity="${coreLit?1:.3}"${tier>=5&&animate?' class="fam-core"':''}/>`;
+  return s+'</svg>';
+}
+async function reflect(m){
+  if(state.reflecting)return;state.reflecting=true;updateTuned();
+  const id=m.id,cur=getProfile(id);
+  const tr=state.messages.slice(-12).map(x=>(x.role==='user'?'USER: ':'ASSISTANT: ')+x.content).join('\n\n');
+  const sys=`You maintain a short, evolving profile of how ONE returning user likes to use a specific assistant mode, so the mode can tune itself to that individual. The mode is "${m.name}" (${m.role}). Its purpose: ${m.sys}\n\nReturn ONLY the updated profile as plain prose, max 100 words, written as direct second-person guidance to the assistant (e.g. "They use you to…, keep replies…, avoid…"). Capture durable STYLE and how they INTERPRET this mode: preferred length, tone, formatting, directness, recurring goals, what lands and what to skip. Do NOT record sensitive disclosures, private facts, or anything clinical — only interaction style and intent. Merge with the existing profile: keep what still holds, adjust what changed. If nothing meaningful has emerged yet, return the existing profile unchanged (or an empty string if there was none).`;
+  const usr=`Existing profile:\n${cur||'(none yet)'}\n\nRecent conversation:\n${tr}`;
+  try{const out=await callClaude(sys,[{role:'user',content:usr}],300);
+    if(out!==undefined){setProfile(id,out.replace(/^["']|["']$/g,'').trim());state.turnsSinceReflect=0;bumpUsage(id,'reflections');renderRail();}
+  }catch(e){}
+  state.reflecting=false;updateTuned();
+}
+function updateTuned(){
+  const btn=$('tunedBtn');if(!btn)return;const has=!!getProfile(active().id);
+  if(state.reflecting){btn.className='ghost-btn tuned learning';btn.innerHTML='\u25CC<span class="lbl"> Learning…</span>';}
+  else if(has){btn.className='ghost-btn tuned on';btn.innerHTML='\u2726<span class="lbl"> Tuned</span>';}
+  else{btn.className='ghost-btn tuned';btn.innerHTML='\u2726<span class="lbl"> Adapt</span>';}
+}
+function openMemory(){
+  const m=active();$('memSub').innerHTML='What \u201C'+esc(m.name)+'\u201D has learned about how you use it.';
+  const sc=familiarity(m.id),t=tierOf(sc),ac=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||m.accent;
+  const ladder=TIERS.map((x,i)=>`<span style="opacity:${i<=t.i?1:.35};color:${i===t.i?'var(--accent)':'var(--text-faint)'};font-weight:${i===t.i?700:500}">${x.name}</span>`).join('<span style="opacity:.3"> · </span>');
+  $('famBlock').innerHTML=`<div class="fam-big">${famRings(sc,104,ac,true)}<div class="fam-info"><div class="fam-tier">${t.name}</div><div class="fam-desc">${t.desc}</div><div class="fam-pct">${sc}% familiarity</div></div></div><div class="fam-ladder">${ladder}</div>`;
+  $('memText').value=getProfile(m.id);$('memScrim').classList.add('open');$('memModal').classList.add('open');
+}
+function closeMemory(){$('memScrim').classList.remove('open');$('memModal').classList.remove('open');}
+
+/* ---- cross-mode portrait ---- */
+function persistPortrait(){try{localStorage.setItem('mode_portrait',JSON.stringify(portrait));}catch(e){}}
+function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
+function profiledModes(){return allModes().filter(m=>getProfile(m.id));}
+function pfParas(t){return (t||'').split(/\n{2,}/).map(p=>`<p>${esc(p).replace(/\n/g,'<br>')}</p>`).join('');}
+function intakeSetupHTML(){
+  const rows=INTAKE.map(x=>`<div class="iq"><div class="iq-q">${x.q}</div><div class="iq-opts" data-k="${x.k}">${x.opts.map(o=>`<button class="iopt${intakeDraft[x.k]===o?' sel':''}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`).join('');
+  const all=INTAKE.every(x=>intakeDraft[x.k]);
+  return `<div class="intake"><div class="intake-h">Quick setup <span>· 30 seconds</span></div><div class="mem-note" style="margin:0 0 14px">Answer a few and the modes start with a sense of you — and we track this against what they learn over time.</div>${rows}<button class="save" id="saveIntake" style="width:100%;margin-top:6px;background:var(--accent);color:var(--on-accent);padding:12px;border-radius:9px;font-weight:600;font-family:var(--font-head);opacity:${all?1:.5}">Save setup</button></div>`;
+}
+function wireIntake(){
+  $('pfContent').querySelectorAll('.iq-opts').forEach(row=>{const k=row.dataset.k;
+    row.querySelectorAll('.iopt').forEach(b=>b.onclick=()=>{intakeDraft[k]=b.dataset.v;renderPortrait();});});
+  const si=$('saveIntake');if(si)si.onclick=()=>{if(!INTAKE.every(x=>intakeDraft[x.k]))return;
+    intake={done:true,answers:Object.assign({},intakeDraft),at:Date.now()};persistIntake();renderRail();renderPortrait();};
+}
+function renderPortrait(){
+  const c=$('pfContent'),pm=profiledModes(),n=pm.length,snaps=portrait.snapshots;
+  if(!intake.done){intakeDraft=Object.assign({},intake.answers,intakeDraft);c.innerHTML=intakeSetupHTML();$('composePf').style.display='none';wireIntake();return;}
+  $('composePf').style.display='';
+  const ac=normAccent(active().accent),tr=currentTraits();
+  const radar=`<div class="radar-wrap">${radarSVG(tr,250,ac,true)}</div><div class="radar-cap">How clearly each trait reads · further out = better known</div>`;
+  const bars=`<div class="trait-list">${TRAITS.map(t=>`<div class="trait"><span class="tn">${t.l}</span><span class="tb"><span class="tf" style="width:${tr[t.k]}%;background:${ac}"></span></span><span class="tv">${tr[t.k]}</span></div>`).join('')}</div>`;
+  const meter=`<div class="meter">${allModes().map(m=>`<i class="${getProfile(m.id)?'on':''}"></i>`).join('')}</div><div class="mem-note" style="margin-top:0">${n} of ${allModes().length} modes have learned how you use them.</div>`;
+  const baseline=`<div class="intake-sum">Self-reported baseline: ${esc(intakeSummary())} <button id="redoIntake">redo</button></div>`;
+  if(!snaps.length){
+    c.innerHTML=radar+bars+meter+baseline+`<div class="pf-empty">${n<2?'Spend time in two or more modes — let the rings fill — then compose a written portrait to sharpen this.':'Ready. Compose a portrait and the radar fills from what the modes actually observe.'}</div>`;
+    $('composePf').style.opacity=n<2?'.5':'1';bindRedo();return;
+  }
+  const cur=snaps[snaps.length-1];
+  let html=radar+bars+`<div class="pf-body">${pfParas(cur.text)}</div>`+meter+baseline;
+  if(snaps.length>1){
+    html+=`<div class="pf-evo"><div class="pf-evo-h">How it has evolved</div>`;
+    for(let i=snaps.length-1;i>=0;i--){const s=snaps[i];
+      html+=`<div class="pf-snap" data-i="${i}"><div class="pf-date">${fmtDate(s.at)}${i===snaps.length-1?' · current':''}</div><div class="pf-prev">${esc(s.text)}</div></div>`;}
+    html+=`</div>`;
+  }
+  c.innerHTML=html;$('composePf').style.opacity='1';
+  c.querySelectorAll('.pf-snap').forEach(el=>el.onclick=()=>el.classList.toggle('open'));bindRedo();
+}
+function bindRedo(){const r=$('redoIntake');if(r)r.onclick=()=>{intake.done=false;intakeDraft=Object.assign({},intake.answers);persistIntake();renderPortrait();};}
+async function composePortrait(){
+  const pm=profiledModes();
+  if(pm.length<2){renderPortrait();return;}
+  const btn=$('composePf');btn.disabled=true;btn.textContent='Composing…';
+  const facets=pm.map(m=>`MODE \u201C${m.name}\u201D (${m.role}):\n${getProfile(m.id)}`).join('\n\n');
+  const prev=portrait.snapshots.length?portrait.snapshots[portrait.snapshots.length-1].text:'';
+  const sys=`You are composing a warm, perceptive portrait of one person, inferred ONLY from how they use a set of assistant modes — each profile below captures their interaction style in that mode. Output ONLY a minified JSON object, no markdown or fences, with exactly two keys: "portrait" — flowing second-person prose ("You tend to…"), 150-230 words, synthesizing the through-line across modes (how they think and work, communicate, what they value, how they engage); be insightful but grounded and humble — impressions from interaction style, NOT facts, diagnosis, or sensitive-trait assessment; hedge where you should; close with one sentence on what is most consistent about them${prev?'; if the previous portrait shifted, note it in one line':''}${intake.done?'; if observed style diverges from the self-reported baseline, note that in one line':''}. "traits" — an object with integer 0-100 scores for precision, drive, candor, warmth, curiosity, craft, where each score reflects how strongly AND how confidently that aspect reads from the evidence (low when there is little signal). Output JSON only.`;
+  const usr=`Mode profiles:\n${facets}${intake.done?`\n\nSelf-reported baseline:\n${intakeSummary()}`:''}${prev?`\n\nPrevious portrait:\n${prev}`:''}`;
+  try{const out=await callClaude(sys,[{role:'user',content:usr}],700);
+    const j=out.replace(/```json|```/g,'').trim();const o=JSON.parse(j.slice(j.indexOf('{'),j.lastIndexOf('}')+1));
+    const tr={};TRAITS.forEach(t=>tr[t.k]=Math.max(0,Math.min(100,Math.round((o.traits&&o.traits[t.k])||0))));
+    if(o.portrait&&o.portrait.trim()){portrait.snapshots.push({at:Date.now(),text:o.portrait.trim(),traits:tr,count:pm.length});persistPortrait();}
+  }catch(err){$('pfContent').innerHTML='<div class="err">Could not compose: '+esc(err.message)+'</div>';btn.disabled=false;btn.textContent='Recompose portrait';return;}
+  btn.disabled=false;btn.textContent='Recompose portrait';renderRail();renderPortrait();
+}
+function openPortrait(){$('composePf').textContent=portrait.snapshots.length?'Recompose portrait':'Compose portrait';renderPortrait();$('pfScrim').classList.add('open');$('pfModal').classList.add('open');}
+function closePortrait(){$('pfScrim').classList.remove('open');$('pfModal').classList.remove('open');}
+
+/* ---- studio ---- */
+let studioEditingId=null;
+function blank(){return{name:'',glyph:'\u2726',role:'',tag:'',sys:'',ph:'Ask anything…',suggestions:[],form:'transcript',surface:'either',scheme:'dark',accent:'#7c9cff',font:'sans',mood:'clinical',density:'comfortable',corners:'soft',pattern:'none',motion:'normal'};}
+function fillForm(m){
+  $('f_name').value=m.name||'';$('f_glyph').value=m.glyph||'\u2726';$('f_role').value=m.role||'';$('f_tag').value=m.tag||'';
+  $('f_sys').value=m.sys||'';$('f_ph').value=m.ph||'';$('f_sug').value=(m.suggestions||[]).join('\n');
+  $('f_form').value=m.form||'transcript';$('f_surface').value=m.surface||'either';$('f_scheme').value=m.scheme||'dark';
+  const ac=(m.accent&&validHex(m.accent))?(m.accent[0]==='#'?m.accent:'#'+m.accent):'#7c9cff';
+  $('f_accent').value=ac;$('f_accent_hex').value=ac;
+  $('f_font').value=m.font||'sans';$('f_mood').value=m.mood||'clinical';$('f_density').value=m.density||'comfortable';
+  $('f_corners').value=m.corners||'soft';$('f_pattern').value=m.pattern||'none';$('f_motion').value=m.motion||'normal';
+}
+function readForm(){return{name:$('f_name').value.trim()||'Untitled',glyph:($('f_glyph').value.trim()||'\u2726').slice(0,2),
+  role:$('f_role').value.trim()||'Custom mode',tag:$('f_tag').value.trim()||'A custom mode.',sys:$('f_sys').value.trim()||'Be helpful.',
+  ph:$('f_ph').value.trim()||'Ask anything…',sendLabel:'Send',suggestions:$('f_sug').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,4),
+  form:$('f_form').value,surface:$('f_surface').value,scheme:$('f_scheme').value,accent:$('f_accent_hex').value,font:$('f_font').value,
+  mood:$('f_mood').value,density:$('f_density').value,corners:$('f_corners').value,pattern:$('f_pattern').value,motion:$('f_motion').value};}
+function updatePreview(){
+  const m=readForm(),t=buildTheme(m),pv=$('preview');
+  const map={'--prev-bg':'--bg','--prev-bgimg':'--bg-image','--prev-bgsize':'--bg-size','--prev-text':'--text','--prev-dim':'--text-dim','--prev-border':'--border','--prev-accent':'--accent','--prev-onacc':'--on-accent','--prev-asstbg':'--asst-bg','--prev-asstborder':'--asst-border','--prev-head':'--font-head','--prev-body':'--font-body','--prev-tr':'--tr','--prev-radius':'--radius'};
+  for(const k in map)pv.style.setProperty(k,t[map[k]]);
+  pv.classList.toggle('bubbled',m.form==='bubbles');
+  $('pvG').innerHTML=avatarSVG(m,'sq');$('pvName').textContent=m.name;$('pvRole').textContent=m.role;
+}
+function openStudio(prefill){
+  $('studio').classList.add('open');$('scrim').classList.add('open');setTab('describe');$('studioErr').innerHTML='';$('describeInput').value='';
+  fillForm(prefill||blank());
+  studioEditingId=prefill&&prefill.id&&!PRESETS.find(p=>p.id===prefill.id)?prefill.id:null;
+  updatePreview();
+}
+function closeStudio(){$('studio').classList.remove('open');$('scrim').classList.remove('open');}
+function saveMode(){const m=readForm();
+  if(studioEditingId){m.id=studioEditingId;const i=customModes.findIndex(c=>c.id===studioEditingId);if(i>=0)customModes[i]=m;}
+  else{m.id='custom_'+Date.now();customModes.push(m);}
+  persistCustom();
+  state.activeId=m.id;state.messages=[];state.turnsSinceReflect=0;applyMode(m);renderRail();renderThread();closeStudio();}
+function setTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===n));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.dataset.pane===n));}
+
+async function synthesize(){
+  const desc=$('describeInput').value.trim();
+  if(!desc){$('studioErr').innerHTML='<div class="err">Describe the mode first.</div>';return;}
+  const btn=$('synthBtn');btn.disabled=true;btn.textContent='\u2726 Synthesizing…';$('studioErr').innerHTML='';
+  const sys=`You design "modes" for a chat interface. A mode bundles a behaviour, a job-title/role, and a coherent visual + structural identity. Given a description, output ONLY one minified JSON object (no markdown, no fences, no prose) with EXACTLY these keys: "name" (1-2 words or a fictional person name), "glyph" (one character/emoji), "role" (a job title OR a short function, e.g. "Forensic Accountant" or "In your corner"), "tag" (evocative, under 6 words), "sys" (a vivid second-person system prompt, 2-4 sentences: tone, behaviour, what to do and avoid), "ph" (input placeholder in voice), "suggestions" (array of exactly 3 short first-person opening prompts), "form" (one of "terminal","transcript","bubbles","manuscript","brief","answer" \u2014 pick the layout that fits: terminal=technical/log, transcript=counselling/teaching/interview, bubbles=casual/companion/concierge, manuscript=long-form writing, brief=decisive/executive, answer=ultra-terse), "surface" (one of "desktop","mobile","either" \u2014 where this persona is most used), "scheme" ("light"|"dark"), "accent" ("#rrggbb" fitting the mood), "font" (one of "sans","grotesk","serif","editorial","mono","display"), "mood" (one of "calm","warm","clinical","austere","intense","playful","luxe"), "density" ("compact"|"comfortable"|"airy"), "corners" ("sharp"|"soft"|"round"), "pattern" ("none"|"grid"|"dots"|"paper"|"gradient"), "motion" ("instant"|"normal"|"calm"). Make every choice reinforce the personality. Output JSON only.`;
+  try{const raw=await callClaude(sys,[{role:'user',content:desc}],1300);
+    const j=raw.replace(/```json|```/g,'').trim();const o=JSON.parse(j.slice(j.indexOf('{'),j.lastIndexOf('}')+1));
+    fillForm(o);setTab('build');updatePreview();
+  }catch(err){$('studioErr').innerHTML='<div class="err">Synthesis failed: '+esc(err.message)+'. Build it by hand below, or set a key in the gear (\u2699).</div>';}
+  btn.disabled=false;btn.textContent='\u2726 Synthesize mode';
+}
+
+/* ---- settings ---- */
+function openSettings(){
+  $('s_endpoint').value=conn.endpoint||DEFAULT_ENDPOINT;$('s_key').value=conn.key||'';$('s_direct').checked=!!conn.direct;$('s_remember').checked=!!conn.remember;
+  if(location.protocol==='file:'&&!conn.key&&!conn.direct)$('s_direct').checked=true;
+  $('setErr').innerHTML='';$('setModal').classList.add('open');$('setScrim').classList.add('open');
+}
+function closeSettings(){$('setModal').classList.remove('open');$('setScrim').classList.remove('open');}
+function readSettings(){return{endpoint:$('s_endpoint').value.trim()||DEFAULT_ENDPOINT,key:$('s_key').value.trim(),direct:$('s_direct').checked,remember:$('s_remember').checked};}
+function persist(){try{if(conn.remember)localStorage.setItem('mode_conn',JSON.stringify(conn));else{const{key,...r}=conn;localStorage.setItem('mode_conn',JSON.stringify({...r,key:''}));}}catch(e){}}
+
+/* ---- events ---- */
+$('send').onclick=send;
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+$('input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px';});
+$('newModeBtn').onclick=()=>openStudio(null);
+$('editBtn').onclick=()=>{const a=active();openStudio(PRESETS.find(p=>p.id===a.id)?{...a,id:null}:a);};
+$('clearBtn').onclick=()=>{state.messages=[];renderThread();};
+$('closeStudio').onclick=closeStudio;$('cancelStudio').onclick=closeStudio;$('scrim').onclick=closeStudio;
+$('saveMode').onclick=saveMode;$('synthBtn').onclick=synthesize;
+$('menuBtn').onclick=()=>$('rail').classList.toggle('open');
+$('railX').onclick=()=>$('rail').classList.remove('open');
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.tab));
+['f_name','f_glyph','f_role','f_tag','f_form','f_surface','f_scheme','f_font','f_mood','f_density','f_corners','f_pattern'].forEach(id=>$(id).addEventListener('input',updatePreview));
+$('f_accent').addEventListener('input',function(){$('f_accent_hex').value=this.value;updatePreview();});
+$('f_accent_hex').addEventListener('input',function(){if(validHex(this.value))$('f_accent').value=this.value[0]==='#'?this.value:'#'+this.value;updatePreview();});
+$('settingsBtn').onclick=openSettings;$('closeSet').onclick=closeSettings;$('setScrim').onclick=closeSettings;
+$('saveSet').onclick=()=>{conn=readSettings();persist();$('setErr').innerHTML='<div class="ok">Saved.</div>';setTimeout(closeSettings,500);};
+$('testSet').onclick=async()=>{conn=readSettings();$('setErr').innerHTML='<div class="hint">Testing…</div>';
+  try{const r=await callClaude('Reply with exactly: ok',[{role:'user',content:'ping'}],10);$('setErr').innerHTML='<div class="ok">Connected — model said: "'+esc(r)+'"</div>';persist();}
+  catch(err){$('setErr').innerHTML='<div class="err">'+esc(err.message)+'<br><br>If this is a CORS / "Failed to fetch" from a file:// page, enable “Direct browser access”. If it still fails, the browser is blocking it — run a local proxy and point Endpoint at it.</div>';}};
+function closeRailMobile(){if(window.innerWidth<=860)$('rail').classList.remove('open');}
+$('tunedBtn').onclick=openMemory;
+$('closeMem').onclick=closeMemory;$('memScrim').onclick=closeMemory;
+$('saveMem').onclick=()=>{setProfile(active().id,$('memText').value);updateTuned();renderRail();closeMemory();};
+$('clearMem').onclick=()=>{setProfile(active().id,'');$('memText').value='';updateTuned();renderRail();closeMemory();};
+$('portraitBtn').onclick=openPortrait;
+$('closePf').onclick=closePortrait;$('pfScrim').onclick=closePortrait;
+$('composePf').onclick=composePortrait;
+
+applyMode(active());renderRail();renderThread();
+</script>
+</body>
+</html>
